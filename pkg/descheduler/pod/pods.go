@@ -17,7 +17,8 @@ limitations under the License.
 package pod
 
 import (
-	"k8s.io/api/core/v1"
+	"github.com/golang/glog"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	clientset "k8s.io/client-go/kubernetes"
@@ -140,4 +141,22 @@ func IsPodWithLocalStorage(pod *v1.Pod) bool {
 // OwnerRef returns the ownerRefList for the pod.
 func OwnerRef(pod *v1.Pod) []metav1.OwnerReference {
 	return pod.ObjectMeta.GetOwnerReferences()
+}
+
+// FindTotalNumberOfPodReplicas returns the number of replicas if the pod is owned by a replicaset
+func FindTotalNumberOfPodReplicas(client clientset.Interface, pod *v1.Pod) int {
+	for _, ownerRef := range OwnerRef(pod) {
+		if ownerRef.Kind == "ReplicaSet" {
+			replicaSets := client.AppsV1().ReplicaSets(pod.GetNamespace())
+			replicaset, err := replicaSets.Get(ownerRef.Name, metav1.GetOptions{})
+			if err != nil {
+				glog.Error("Error:", err)
+				continue
+			}
+			desiredReplicas := *replicaset.Spec.Replicas
+			glog.V(2).Infof("Size of %v is %v", ownerRef.Name, desiredReplicas)
+			return int(desiredReplicas)
+		}
+	}
+	return 1
 }

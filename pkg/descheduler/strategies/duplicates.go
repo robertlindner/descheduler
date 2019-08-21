@@ -17,11 +17,12 @@ limitations under the License.
 package strategies
 
 import (
+	"math"
 	"strings"
 
 	"github.com/golang/glog"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	clientset "k8s.io/client-go/kubernetes"
 
 	"github.com/kubernetes-incubator/descheduler/cmd/descheduler/app/options"
@@ -50,10 +51,13 @@ func deleteDuplicatePods(client clientset.Interface, policyGroupVersion string, 
 		glog.V(1).Infof("Processing node: %#v", node.Name)
 		dpm := ListDuplicatePodsOnANode(client, node, evictLocalStoragePods)
 		for creator, pods := range dpm {
-			if len(pods) > 1 {
-				glog.V(1).Infof("%#v", creator)
+			count := podutil.FindTotalNumberOfPodReplicas(client, pods[0])
+			startAtPodNo := int(math.Ceil(float64(count) / 3.0)) // refactor 3.0 into a configurable variable
+			if len(pods) > startAtPodNo {
+				glog.V(1).Infof("%v Pods found on Node %v for %v", count, node.Name, creator)
+				// glog.V(1).Infof("%#v", creator)
 				// i = 0 does not evict the first pod
-				for i := 1; i < len(pods); i++ {
+				for i := startAtPodNo; i < len(pods); i++ {
 					if maxPodsToEvict > 0 && nodepodCount[node]+1 > maxPodsToEvict {
 						break
 					}
