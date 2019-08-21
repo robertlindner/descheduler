@@ -16,7 +16,7 @@ spec:
         spec:
           containers:
           - name: descheduler
-            image: rlindner/descheduler:0.9.0-17-g9e28f0b3-7
+            image: rlindner/descheduler:0.9.0-21-g2a589f25
             volumeMounts:
             - mountPath: /policy-dir
               name: policy-volume
