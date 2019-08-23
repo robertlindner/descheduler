@@ -154,7 +154,6 @@ func FindTotalNumberOfPodReplicas(client clientset.Interface, pod *v1.Pod) int {
 				continue
 			}
 			desiredReplicas := *replicaset.Spec.Replicas
-			glog.V(2).Infof("Size of %v is %v", ownerRef.Name, desiredReplicas)
 			return int(desiredReplicas)
 		}
 	}
